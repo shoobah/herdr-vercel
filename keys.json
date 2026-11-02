@@ -1,0 +1,8 @@
+{
+  "global": {
+    "cmd-e": "mod.open:vercel"
+  },
+  "mod:vercel": {
+    "escape": "vercel.escape"
+  }
+}
