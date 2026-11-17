@@ -1,0 +1,18 @@
+# herdr-plugin.toml: the manifest that lists this repo on the Herdr
+# marketplace (https://herdr.dev/plugins/).
+#
+# This repo holds a mod for the Herdr desktop app, not a TUI plugin. The
+# [[build]] step installs the mod: it copies mods/vercel/ into the mods folder
+# of the Herdr app and binds cmd-e in its keys.json. It has no TUI actions or
+# panes.
+
+id = "herdr-vercel"
+name = "Vercel (Herdr app mod)"
+version = "0.1.0"
+description = "Your Vercel deployments in a popup in the Herdr desktop app, in the look of Herdr's Linear popup. Installs the app mod."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+[[build]]
+platforms = ["linux", "macos"]
+command = ["/bin/sh", "scripts/install-app-mod.sh"]
