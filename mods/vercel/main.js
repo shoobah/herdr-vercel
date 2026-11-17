@@ -365,7 +365,12 @@ export default class Vercel extends View {
 
   async readCache(cx) {
     if (this.demo) return;
-    this.cache = JSON.parse((await fs.readFile(CACHE, "utf8").catch(() => null)) ?? "{}");
+    // A damaged cache is only lost lists, never a reason not to start.
+    try {
+      this.cache = JSON.parse((await fs.readFile(CACHE, "utf8").catch(() => null)) ?? "{}");
+    } catch {
+      this.cache = {};
+    }
     this.seedAll();
     cx.notify();
   }
@@ -383,7 +388,9 @@ export default class Vercel extends View {
     if (this.demo) return;
     const c = (this.cache ??= {});
     ((c.lists ??= {})[this.project ?? ALL] ??= {})[tab] = items;
-    fs.writeFile(CACHE, JSON.stringify(c)).catch(() => {});
+    // The tabs load at the same time; writes that overlap leave the file
+    // broken. One write at a time, each with the cache as it is then.
+    this.saving = (this.saving ?? Promise.resolve()).then(() => fs.writeFile(CACHE, JSON.stringify(this.cache)).catch(() => {}));
   }
 
   load(tab, cx) {
@@ -452,7 +459,21 @@ export default class Vercel extends View {
   }
 
   // The rows shown, grouped by project when all of them are listed.
+  // The rows with each group's together, at its first row's place: the list
+  // draws one heading per run of a group, and the virtual list throws on a
+  // repeated heading key, which leaves it blank.
   shownRows() {
+    const rows = this.shownRowsAsGiven();
+    const order = [];
+    const by = new Map();
+    for (const r of rows) {
+      if (!by.has(r.group)) (by.set(r.group, []), order.push(r.group));
+      by.get(r.group).push(r);
+    }
+    return order.flatMap((g) => by.get(g));
+  }
+
+  shownRowsAsGiven() {
     const l = this.lists[this.tab];
     const all = !this.project;
     const looked = this.found && this.filter.trim() === this.found.query;
